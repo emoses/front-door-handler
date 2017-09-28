@@ -30,9 +30,9 @@ preferences {
 
 def setupPage() {
     dynamicPage(name: "setupPage", title: "", install: true, uninstall: true) {
-        section("Swtiches and Lights") {
+        section("Switches and Lights") {
             input "doorSwitch", "capability.button", required: true, title: "When this is pressed"
-            input "lights", "capability.switch", multiple: true, title: "Turn these on"
+            input "lights", "capability.switchLevel", multiple: true, title: "Turn these on"
             input "allLights", "capability.switch", multiple: true, title: "...or turn these off"
         }
         // get the available actions
@@ -41,7 +41,6 @@ def setupPage() {
             // sort them alphabetically
             	actions.sort()
                 section("Select Routine for double-tap") {
-                            log.trace actions
                 	// use the actions as the options for an enum input
                 	input "action", "enum", title: "Select an action to execute", options: actions
                 }
@@ -63,15 +62,17 @@ def updated() {
 }
 
 def initialize() {
-    subscribe(doorSwitch, "button.pushed", pushHandler)
+    subscribe(doorSwitch, "button", pushHandler)
 }
 
 def pushHandler(evt) {
     def currentStates = lights.collect { it.currentState("switch") }
     log.debug currentStates
     if (currentStates.any { it.value == "on" }) {
+    	log.debug "Some downstairs lights were on, turning everything off"
     	allLights.each {it.off()}
     } else { 
-        lights.each {it.on()}
+    	log.debug "No downstairs lights were on, turning them on"
+        lights.each { it.setLevel(75); it.on()}
     }
 }
